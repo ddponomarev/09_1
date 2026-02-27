@@ -7,7 +7,9 @@
 - Для проверки корректности настройки, разорвите один из кабелей между одним из маршрутизаторов и Switch0 и запустите ping между PC0 и Server0.
 - На проверку отправьте получившуюся схему в формате pkt и скриншот, где виден процесс настройки маршрутизатора.
 
+
 - [схема CPT9.0](https://github.com/ddponomarev/09_1/blob/master/img/hsrp_ponomarev.pkt)
+
 ![Задание1](https://github.com/ddponomarev/09_1/blob/master/img/zad1.png)
 
 ---
@@ -19,7 +21,47 @@
 - Настройте Keepalived так, чтобы он запускал данный скрипт каждые 3 секунды и переносил виртуальный IP на другой сервер, если bash-скрипт завершался с кодом, отличным от нуля (то есть порт веб-сервера был недоступен или отсутствовал index.html). Используйте для этого секцию vrrp_script
 - На проверку отправьте получившейся bash-скрипт и конфигурационный файл keepalived, а также скриншот с демонстрацией переезда плавающего ip на другой сервер в случае недоступности порта или файла index.html
 
-![Задание2,3](https://github.com/ddponomarev/09_1/blob/master/img/zad2-3.png)
+```
+Скрипт web.sh
+#!/bin/bash
+
+if nc -z localhost 80 && [ -f /var/www/html/index.nginx-debian.html ]; then
+    exit 0
+else
+    exit 1
+fi
+```
+
+
+```
+Конфигурация keepalived.conf
+#!/bin/bash
+
+vrrp_script check_web {
+        script "/etc/keepalived/web.sh"
+        interval 3
+}
+
+vrrp_instance VI_1 {
+        state MASTER
+        interface ens3
+        virtual_router_id 50
+        priority 255
+        advert_int 1
+
+        virtual_ipaddress {
+              192.168.0.50/24
+        }
+
+        track_script {
+              check_web
+        }
+}
+```
+
+![Задание2.1](https://github.com/ddponomarev/09_1/blob/master/img/zad2_1.png)
+
+![Задание2.2](https://github.com/ddponomarev/09_1/blob/master/img/zad2_2.png)
 ---
 
 ### Задание 3*
